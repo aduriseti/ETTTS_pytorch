@@ -5,6 +5,7 @@ import librosa
 import numpy as np
 import string
 
+
 class LJSpeechDataset(Data.Dataset):
     def __init__(self,root = '../LJSpeech-1.1',ttmel=1):
         self.ttmel = ttmel
@@ -57,7 +58,6 @@ class LJSpeechDataset(Data.Dataset):
             return ch.cat((tensor.type(ch.float),
                            ch.zeros(*padDim).type(ch.float)),
                           dim=-1)
-
         
         audio,rate = librosa.load(wavpath)
         
@@ -84,7 +84,6 @@ class LJSpeechDataset(Data.Dataset):
                 Y = padZero(ch.from_numpy(Y),256)
         S = S.type(ch.float)
         Y = Y.type(ch.float)
-        
 
         L = np.array([self.c2i[c] for c in dtxt])
         L = padZero(ch.from_numpy(L),180)
