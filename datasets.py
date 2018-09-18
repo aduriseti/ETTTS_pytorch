@@ -3,7 +3,6 @@ import torch as ch
 import torch.utils.data as Data
 import librosa
 import numpy as np
-import string
 from hyperparams import Hyperparams as params
 
 
@@ -61,7 +60,7 @@ class LJSpeechDataset(Data.Dataset):
         Y = (Y/np.max(Y))**params.gamma # normalize w/ preemphasis factor gamma    
 
         S = librosa.feature.melspectrogram(audio,
-                                           n_fft=parms.nFFT,
+                                           n_fft=params.nFFT,
                                            hop_length=params.hopL,
                                            n_mels=params.nMel)
         S = S[:,3::4]  # b/c deconv non causal??

@@ -1,9 +1,11 @@
+import string
+
 class Hyperparams:
     
     # alphabet = string.ascii_lowercase + '?!:;,.- \"()'+'\n'+"'"
     alphabet = string.ascii_lowercase + ',.- \"'
-    i2c = dict(enumerate(self.alphabet))
-    c2i = dict((c,i) for i,c in enumerate(self.alphabet))
+    i2c = dict(enumerate(alphabet))
+    c2i = dict((c,i) for i,c in enumerate(alphabet))
 
     
     sep = 0
