@@ -1,6 +1,7 @@
 import torch as ch
 from hyperparams import Hyperparams as params
 
+
 class C(ch.nn.Module):
     def __init__(self,o,i,k,d,causal,s=1):
         super(C,self).__init__()
@@ -11,14 +12,18 @@ class C(ch.nn.Module):
         else:
 #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
             self.pad = (k-1)*d // 2 
+        self.dilation = d
         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
                     kernel_size=k, dilation=d, stride=s, padding=self.pad)
         ch.nn.init.kaiming_normal_(self.conv.weight.data)
-        self.dilation = d
+        self.chanBN = ch.nn.BatchNorm1d(num_features=o)
     
     def forward(self,X):
         O = self.conv(X)
-        return O[:,:,:-self.pad] if self.causal and self.pad else O
+        O = O[:,:,:-self.pad] if self.causal and self.pad else O
+#         O = self.chanBN(O.permute(0,2,1)).permute((0,2,1))
+        O = self.chanBN(O)
+        return O
 
 class Cs(ch.nn.Module):
     def __init__(self,o,i,k,d,causal,s=1):
