@@ -59,6 +59,10 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [x] alpha
             - [x] learning rate
             - [x] chunk size (1 default for paper)
+        - [ ] abstract class/fun for training/checkpointing/loss monitoring
+        - [ ] create train dispatcher to train different hyperparameter combinations on different gpus
+            - [x] request gpu limit increase -> 4
+            - [ ] hyperparam queue?
         - [ ] test out if concatenating mel and text enc makes sense
         - [x] combine the text2Mel,audioDec,attention models into one class
         - [x] generate text2Mel
@@ -66,7 +70,6 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [x] fix inference memory leak
             - with ch.no_grad()
         - [ ] train text2Mel and SSRN together
-        - [ ] abstract class/fun for training/checkpointing/loss monitoring
         - [ ] chunked generation - train network to encode multiple timesteps at a time
         - [x] hyperparams class
             - [ ] add initialization?
