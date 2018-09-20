@@ -77,6 +77,11 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [x] separate eval code from training code
         - [ ] set behavior at preempt to restart and resume training 
         - [ ] split train test
+        - [ ] separability
+            - [x] non sep
+            - [ ] sep
+            - [ ] super sep
+            - [ ] get rid of unnecesary separability params for separable convolutions
         - [ ] normalization
             - [x] batch norm
             - [ ] layer norm
@@ -86,7 +91,6 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [ ] decay
         - [ ] gradient clipping
         - [ ] pad from other direction? - seemed like attention model trained from end of input to beginning
-        - [ ] get rid of unnecesary separability params for separable convolutions
         - [x] get some NULL character going for padding - alternatively modify c2i to not map any character to 0
 - [x] use as reference
     - [x] https://github.com/Kyubyong/dc_tts
