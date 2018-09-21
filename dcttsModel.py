@@ -16,13 +16,15 @@ class C(ch.nn.Module):
         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
                     kernel_size=k, dilation=d, stride=s, padding=self.pad)
         ch.nn.init.kaiming_normal_(self.conv.weight.data)
-        self.chanBN = ch.nn.BatchNorm1d(num_features=o)
+        if params.norm: self.norm = ch.nn.BatchNorm1d(num_features=o)
+        if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
     
     def forward(self,X):
         O = self.conv(X)
         O = O[:,:,:-self.pad] if self.causal and self.pad else O
 #         O = self.chanBN(O.permute(0,2,1)).permute((0,2,1))
-        O = self.chanBN(O)
+        if params.norm: O = self.norm(O)
+        if params.dropout: O = self.dropout(O)
         return O
 
 class Cs(ch.nn.Module):
