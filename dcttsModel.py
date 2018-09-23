@@ -1,76 +1,48 @@
 import torch as ch
 from hyperparams import Hyperparams as params
 
-
 class C(ch.nn.Module):
     def __init__(self,o,i,k,d,causal,s=1):
         super(C,self).__init__()
         self.causal = causal
         assert (k-1)%2 == 0 
+        assert k > 0
         if causal:
             self.pad = (k-1)*d
         else:
 #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
             self.pad = (k-1)*d // 2 
         self.dilation = d
-        self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
+        if not params.sep or k == 1: 
+            self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
                     kernel_size=k, dilation=d, stride=s, padding=self.pad)
-        ch.nn.init.kaiming_normal_(self.conv.weight.data)
-        if params.norm: self.norm = ch.nn.BatchNorm1d(num_features=o)
+            ch.nn.init.kaiming_normal_(self.conv.weight.data)
+        else:
+            if params.sep == 2: chanGroups = 4
+            else: chanGroups = 1
+            self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
+                        kernel_size=k, dilation=d, stride=s,
+                        padding=self.pad, groups=i)
+            self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,
+                                          kernel_size=1, groups=chanGroups)
+            ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
+            ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
+            self.conv = lambda X: self.pointwise(self.depthwise(X))
+        # layer norm over channel
+        if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
+        # batch norm over channel
+        elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
         if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
     
     def forward(self,X):
+        if params.dropout: X = self.dropout(X)
         O = self.conv(X)
         O = O[:,:,:-self.pad] if self.causal and self.pad else O
-#         O = self.chanBN(O.permute(0,2,1)).permute((0,2,1))
-        if params.norm: O = self.norm(O)
-        if params.dropout: O = self.dropout(O)
+        if params.norm == 2: # layer norm over channel
+            O = self.norm(O.permute((0,2,1))).permute((0,2,1))
+        elif params.norm == 1: # batch norm over channel
+            O = self.norm(O)
         return O
-
-class Cs(ch.nn.Module):
-    def __init__(self,o,i,k,d,causal,s=1):
-        super(C,self).__init__()
-        self.causal = causal
-        assert (k-1)%2 == 0 
-        if causal:
-            self.pad = (k-1)*d
-        else:
-            self.pad = (k-1)*d // 2 
-#         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
-#                     kernel_size=k, dilation=d, stride=s, padding=pad)
-        self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
-                        kernel_size=k, dilation=d, stride=s,
-                        padding=self.pad, groups=i)
-        self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,kernel_size=1)
-        ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
-        ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
-    
-    def forward(self,X):
-        O = self.pointwise(self.depthwise(X))
-        return O[:,:,:-self.pad] if self.causal else O
-
-class Css(ch.nn.Module):
-    def __init__(self,o,i,k,d,causal,s=1):
-        super(C,self).__init__()
-        self.causal = causal
-        assert (k-1)%2 == 0 
-        if causal:
-            self.pad = (k-1)*d
-        else:
-            self.pad = (k-1)*d // 2 
-#         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
-#                     kernel_size=k, dilation=d, stride=s, padding=pad)
-        self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
-                        kernel_size=k, dilation=d, stride=s,
-                        padding=self.pad, groups=i)
-        self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,
-                                      kernel_size=1, groups=4)
-        ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
-        ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
-    
-    def forward(self,X):
-        O = self.pointwise(self.depthwise(X))
-        return O[:,:,:-self.pad] if self.causal else O
 
 class D(ch.nn.Module):
     def __init__(self,o,i,k,d,causal=0,s=2):

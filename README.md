@@ -55,7 +55,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [ ] automatic cold start i.e. don't have to specify load = 1|0
         - [x] implement model params
             - [ ] nonsep vs sep vs super sep
-            - [ ] batch vs layer vs weight vs instance vs group norm
+            - [x] batch vs layer vs weight vs instance vs group norm
             - [x] alpha
             - [x] learning rate
             - [x] chunk size (1 default for paper)
@@ -90,10 +90,10 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [ ] get rid of unnecesary separability params for separable convolutions
         - [ ] normalization
             - [x] batch norm
-            - [ ] layer norm
+            - [x] layer norm
             - [ ] instance norm
             - [ ] group norm
-            - [ ] get idea for learning rate
+            - [x] get idea for learning rate
         - [ ] decay
         - [ ] gradient clipping
         - [ ] pad from other direction? - seemed like attention model trained from end of input to beginning

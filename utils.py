@@ -44,7 +44,9 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.'):
                  os.path.join(root,chkptNm)]
     print('HYPERPARAMS',chkptDirNm)
     for path in loadPaths: 
-        if not os.path.exists(path): continue
+        if not os.path.exists(path): 
+            print('PATH DOES NOT EXIST:',path)
+            continue
         state = ch.load(path,map_location=dev)
         network.load_state_dict(state['modelState'])
         optimizer.load_state_dict(state['optimizerState'])
