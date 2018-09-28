@@ -66,10 +66,8 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [ ] down/up sample in data fetcher
             - [ ] add as hyperparam in tunable model params
         - [ ] abstract class/fun for training/checkpointing/loss monitoring
-        - [ ] create train dispatcher to train different hyperparameter combinations on different gpus
-            - [x] request gpu limit increase -> 4
-            - [ ] hyperparam queue?
         - [ ] test out if concatenating mel and text enc makes sense
+            - probably does - common in most attention mechanisms
         - [x] combine the text2Mel,audioDec,attention models into one class
         - [x] generate text2Mel
         - [x] generate SSRN
@@ -77,26 +75,51 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - with ch.no_grad()
         - [ ] train text2Mel and SSRN together
         - [ ] chunked generation - train network to encode multiple timesteps at a time
-        - [x] hyperparams class
-            - [ ] add initialization?
+        - [ ] hyperparams
+            - [x] hyperparams class
+                - [ ] add initialization?
+            - [ ] hyperparameter optimization package
+                - [ ] http://hyperopt.github.io/hyperopt/
+            - [ ] create train dispatcher to train different hyperparameter combinations on different gpus
+                - [x] request gpu limit increase -> 4
+                - [ ] hyperparam queue?
+                - [ ] more cores for dataloader? - maybe not for layer norm
+        - [ ] multi GPU speedup
+            - [ ] https://github.com/soumith/imagenet-multiGPU.torch
         - [x] separate training code from model code
         - [x] separate eval code from training code
         - [ ] set behavior at preempt to restart and resume training 
         - [ ] split train test
         - [ ] separability
             - [x] non sep
-            - [ ] sep
-            - [ ] super sep
-            - [ ] get rid of unnecesary separability params for separable convolutions
+            - [x] sep
+            - [x] super sep
+            - [ ] check if non-torch lambda function slowing down network
+            - [x] get rid of unnecesary separability params for separable convolutions
+            - [ ] try 2dconv over 1 channel instead of 1d conv over multiple channels
+            - [x] bottleneck conv layers
+                - [ ] figure out why model not detecting bottleneck weights
+                - training really slow
+                    - [ ] try layer norm between all bottleneck layers? 
+                    - [ ] increase lr
+                    - [ ] gradient clipping
+                - [x] try not bottlenecking when channel depth changes
+                    - doesnt work bc of highwat conv def
+            - [ ] see if there's a way to decompose non separated weights into separated convolutions then finetune w/ separated architecture
+            
         - [ ] normalization
             - [x] batch norm
-            - [x] layer norm
+            - [x] layer norm 
+                - [x] channels <-- best so far
+                - [ ] weights
             - [ ] instance norm
             - [ ] group norm
             - [x] get idea for learning rate
         - [ ] decay
         - [ ] gradient clipping
+        - [ ] residual connections vs highway connections
         - [ ] pad from other direction? - seemed like attention model trained from end of input to beginning
+            - [ ] found long sentences not spoken well at end
         - [x] get some NULL character going for padding - alternatively modify c2i to not map any character to 0
 - [x] use as reference
     - [x] https://github.com/Kyubyong/dc_tts
@@ -143,6 +166,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - super separability: group ptwise ops also
         - they found parameter savings from serparation/super separation to be superior to param savings from dilation
         - [x] try it out 
+    - [ ] bottleneck convolution layers
     - [ ] sparsity constraints w/ pruning
         - [ ] for RNN i.e. waveRNN
         - [ ] forn CNN - saw package online - https://github.com/jacobgil/pytorch-pruning

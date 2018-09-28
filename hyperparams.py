@@ -7,8 +7,9 @@ class Hyperparams:
     i2c = dict(enumerate(alphabet))
     c2i = dict((c,i) for i,c in enumerate(alphabet))
 
-    # 0: no sep, 1: depthwise sep, 2: super sep
-    sep = 1
+    
+    # 0: no sep, 1: depthwise sep, 2: super sep, 3: bottleneck
+    sep = 3
     # model width multiple - determines # of channels at each layer
     alpha = 1
     # controls dropout after conv layers
@@ -20,7 +21,7 @@ class Hyperparams:
     # learning rate
     lr = 1e-3 # from that korean guys hyperparameters: https://github.com/Kyubyong/dc_tts
 #     lr = 2e-4 # from the original paper: https://arxiv.org/abs/1710.08969
-    chunk = 4 # generate 1 timestep per autoregression
+    chunk = 1 # generate 1 timestep per autoregression
     
     # LR TOO HIGH
     # HYPERPARAMS {'sep': 0, 'alpha': 1, 'dropout': 0, 'norm': 0, 'lr': 0.001, 'chunk': 1}
@@ -30,17 +31,30 @@ class Hyperparams:
 #     HYPERPARAMS sep:0|alpha:1|dropout:0|norm:0|lr:0.0002|chunk:1
 # LOADED EPOCH 10, LOSS 0.031800729800849706, BEST LOSS 0.031800729800849706 FROM
 
-    # SPECKLE PATTERN
-#     {'sep': 0, 'alpha': 1, 'dropout': 0.05, 'norm': 2, 'lr': 0.001, 'chunk': 1}
+
     # BEST YET - INTELLIGIBLE SPEECH
+    # dropout definately helps generalize to A-team intro
+    # HYPERPARAMS sep:0|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:1
+# LOADED EPOCH 102, LOSS 0.024689697037770676, BEST LOSS 0.024689697037770676 FROM
+# HYPERPARAMS sep:0|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:1
+# LOADED EPOCH 31, LOSS 0.10023909083275653, BEST LOSS 0.10023909083275653 FROM
+# 100/100 [00:02<00:00, 34.42it/s] GPU
+# 100/100 [00:17<00:00, 5.66it/s] CPU
+
 #     HYPERPARAMS sep:0|alpha:1|dropout:0|norm:2|lr:0.001|chunk:1
 #     LOADED EPOCH 99, LOSS 0.0231524246063695, BEST LOSS 0.0231524246063695 FROM
 #     LOADED EPOCH 29, LOSS 0.09947643938349254, BEST LOSS 0.09947643938349254 FROM
 
-# HYPERPARAMS sep:0|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:1
-# LOADED EPOCH 102, LOSS 0.024689697037770676, BEST LOSS 0.024689697037770676 FROM
-# HYPERPARAMS sep:0|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:1
-# LOADED EPOCH 31, LOSS 0.10023909083275653, BEST LOSS 0.10023909083275653 FROM
+
+
+# HYPERPARAMS sep:1|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:1
+# 100/100 [00:02<00:00, 44.49it/s] GPU
+# 100/100 [00:33<00:00, 2.96it/s] CPU
+
+# HYPERPARAMS sep:0|alpha:1|dropout:0.05|norm:2|lr:0.001|chunk:4
+# LOADED EPOCH 99, LOSS 0.025080004773700416, BEST LOSS 0.025080004773700416 FROM
+# 25/25 [00:02<00:00, 8.87it/s] CPU
+# 25/25 [00:00<00:00, 50.81it/s] GPU
     
     d = int(256*alpha)
     e = int(128*alpha)
