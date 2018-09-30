@@ -61,3 +61,63 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.',
 class ChkptModule(ch.nn.Module):
     def __init__(self,params=hyperparams.Hyperparams()):
         super(ChkptModule,self).__init__()
+
+import tqdm
+class ModelWrapper:
+    def __init__(self,network,optimizer,lossFun,loader,modelName,
+                 dev='cpu',root='.',params=hyperparams.Hyperparams()):
+        self.network = network
+        self.optimizer = optimizer
+        self.lossFun = lossFun
+        self.loader = loader
+        self.modelName = modelName
+        self.dev = dev
+        self.root = root
+        self.params = params
+        self.startEpoch = 0
+        self.lossHist = []
+        self.bestLoss = float('inf')
+        print('INITIALIZED {} WITH PARAMS'.format(modelName),text2MelParams.paramDict)
+        
+    def evaluate(self,evalFun):
+        pass
+#         evalFun
+    
+    def train(self,numEpochs=50,progressBar=tqdm.tqdmNotebook):
+        for epoch in range(self.startEpoch,self.startEpoch+numEpochs):
+            print("EPOCH",epoch)
+            epochLoss = []
+            for step,batch in progressBar(enumerate(self.loader)):
+                batchL,batchS,batchY,batchI = batch
+                bL = ch.autograd.Variable(batchL.to(self.dev))
+                bS = ch.autograd.Variable(batchS.to(self.dev))
+                bY = ch.autograd.Variable(batchY.to(self.dev))
+                bI = ch.autograd.Variable(batchI.to(self.dev))
+                loss = self.lossFun(self.network,bL,bS,bY,bI)
+                epochLoss.append(loss.data.item())
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+            self.lossHist.append(np.mean(epochLoss))
+            print('epoch',epoch,'total',lossHist[-1])
+            self.bestLoss = min(lossHist[-1],self.bestLoss)
+            self.save()
+            self.evaluate()
+            
+    def save(self):
+        state = {
+            'epoch': len(self.lossHist),
+            'modelState': self.network.state_dict(),
+            'lossHist': self.lossHist,
+            'bestLoss': self.bestLoss,
+            'optimizerState': self.optimizer.state_dict() 
+        }
+        saveChkpt(state,model=self.modelName)
+    
+    def load(self):
+        self.epoch,self.lossHist,self.bestLoss = loadChkpt(self.network,self.optimizer,self.modelName,self.dev,self.root,self.params)
+        
+    def to(self,dev):
+        self.dev = dev
+        return self
+    
