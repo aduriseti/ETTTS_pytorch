@@ -1,4 +1,6 @@
 import torch as ch
+import numpy as np
+import tqdm
 import os
 import hyperparams
 import matplotlib.pyplot as plt
@@ -19,19 +21,18 @@ import matplotlib.pyplot as plt
 #              'lr':params.lr,'chunk':params.chunk}
 
 def saveChkpt(state,model,root='.',params=hyperparams.Hyperparams()):
-    paramDict = dict((p,params.__dict__[p]) for p in params.tuneable if params.__dict__[p] != None)
-    chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in paramDict.items())
+    chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in params.paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
     chkptNm = model+'Chkpt.pth.tar'
     bestNm = model+'Best.pth.tar'
     if not os.path.exists(chkptDir): os.makedirs(chkptDir)
     savePaths = [os.path.join(chkptDir,chkptNm),os.path.join(root,chkptNm)]
     # found copying files using shutil unreliable
-    if state['lossHist'][-1] <= state['bestLoss']: 
+    if state['lossHist'] and state['lossHist'][-1] <= state['bestLoss']: 
         savePaths += [os.path.join(chkptDir,bestNm),os.path.join(root,bestNm)]
     [ch.save(state,path) for path in savePaths]
     print("HYPERPARAMS",chkptDirNm)
-    print("SAVED EPOCH {}, LOSS {}, BEST LOSS {} TO {}".format(state['epoch'],state['lossHist'][-1],state['bestLoss'],savePaths))
+    print("SAVED EPOCH {}, LOSS {}, BEST LOSS {} TO {}".format(state['epoch'],state['lossHist'][-1] if state['lossHist'] else float('inf'),state['bestLoss'],savePaths))
 
 
 def loadChkpt(network,optimizer,model,dev='cpu',root='.', 
@@ -53,7 +54,7 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.',
         network.load_state_dict(state['modelState'])
         optimizer.load_state_dict(state['optimizerState'])
 #         if len(state['lossHist']) > 10: plt.plot(state['lossHist'])
-        print("LOADED EPOCH {}, LOSS {}, BEST LOSS {} FROM".format(state['epoch'],state['lossHist'][-1],state['bestLoss'],path))
+        print("LOADED EPOCH {}, LOSS {}, BEST LOSS {} FROM {}".format(state['epoch'],state['lossHist'][-1] if state['lossHist'] else float('inf'),state['bestLoss'],path))
         return state['epoch'],state['lossHist'],state['bestLoss']
     return 0,[],float('inf')
 
@@ -62,10 +63,11 @@ class ChkptModule(ch.nn.Module):
     def __init__(self,params=hyperparams.Hyperparams()):
         super(ChkptModule,self).__init__()
 
-import tqdm
+def evalFunTemplate(network,batch): pass
+def dispFunTemplate(network,batch): pass
 class ModelWrapper:
     def __init__(self,network,optimizer,lossFun,loader,modelName,
-                 dev='cpu',root='.',params=hyperparams.Hyperparams()):
+                 dev='cpu',root='.',evalFun=evalFunTemplate,dispFun=dispFunTemplate):
         self.network = network
         self.optimizer = optimizer
         self.lossFun = lossFun
@@ -73,34 +75,48 @@ class ModelWrapper:
         self.modelName = modelName
         self.dev = dev
         self.root = root
-        self.params = params
+        self.evalFun = evalFun
+        self.dispFun = dispFun
+        self.params = self.network.params
         self.startEpoch = 0
         self.lossHist = []
         self.bestLoss = float('inf')
-        print('INITIALIZED {} WITH PARAMS'.format(modelName),text2MelParams.paramDict)
+        print('INITIALIZED {} WITH HYPERPARAMS'.format(modelName),self.params.paramDict)
+        print('TOTAL PARAM COUNT',sum(np.prod(p.size()) for p in network.parameters()))
         
-    def evaluate(self,evalFun):
+    def evaluate(self,k=1):
+        for step,batch in enumerate(self.loader):
+            if step >= k: break
+            batchV = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
+            self.evalFun(self.network,batchV)
+        
+    def predict(self):
         pass
-#         evalFun
     
-    def train(self,numEpochs=50,progressBar=tqdm.tqdmNotebook):
+    def disp(self,k=1):
+        for step,batch in enumerate(self.loader):
+            if step >= k: break
+            batchV = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
+            self.dispFun(self.network,batchV)
+    
+    def train(self,numEpochs=50,progressBar=tqdm.tqdm_notebook,
+              numSteps=float('inf')):
         for epoch in range(self.startEpoch,self.startEpoch+numEpochs):
             print("EPOCH",epoch)
             epochLoss = []
             for step,batch in progressBar(enumerate(self.loader)):
-                batchL,batchS,batchY,batchI = batch
-                bL = ch.autograd.Variable(batchL.to(self.dev))
-                bS = ch.autograd.Variable(batchS.to(self.dev))
-                bY = ch.autograd.Variable(batchY.to(self.dev))
-                bI = ch.autograd.Variable(batchI.to(self.dev))
-                loss = self.lossFun(self.network,bL,bS,bY,bI)
+                if step >= numSteps: break
+#                 bL,bS,BY,bI = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
+                batchV = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
+                loss = self.lossFun(self.network,batchV)
                 epochLoss.append(loss.data.item())
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
             self.lossHist.append(np.mean(epochLoss))
-            print('epoch',epoch,'total',lossHist[-1])
-            self.bestLoss = min(lossHist[-1],self.bestLoss)
+            print('epoch',epoch,'total',self.lossHist[-1])
+            self.bestLoss = min(self.lossHist[-1],self.bestLoss)
+            self.dispFun(self.network,batchV)
             self.save()
             self.evaluate()
             
@@ -112,7 +128,7 @@ class ModelWrapper:
             'bestLoss': self.bestLoss,
             'optimizerState': self.optimizer.state_dict() 
         }
-        saveChkpt(state,model=self.modelName)
+        saveChkpt(state,model=self.modelName,params=self.params)
     
     def load(self):
         self.epoch,self.lossHist,self.bestLoss = loadChkpt(self.network,self.optimizer,self.modelName,self.dev,self.root,self.params)

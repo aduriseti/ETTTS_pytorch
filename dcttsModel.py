@@ -156,7 +156,7 @@ class Text2Mel(ch.nn.Module):
         d = self.params.d
         K,V = KV[:,:d,:],KV[:,d:,:]
         Q = self.audioEnc(S[:,:,:])
-        A = ch.nn.Softmax(dim=1)(ch.matmul(ch.transpose(K,-1,-2),Q) / self.d**0.5)
+        A = ch.nn.Softmax(dim=1)(ch.matmul(ch.transpose(K,-1,-2),Q) / self.params.d**0.5)
         R = ch.matmul(V,A)
         Rp = ch.cat([R,Q],dim=1)
         S = self.audioDec(Rp)

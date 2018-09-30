@@ -61,8 +61,9 @@ class Hyperparams:
         self.paramDict = dict((p,self.__dict__[p]) for p in self.tuneable if self.__dict__[p] != None)
     
     # alphabet = string.ascii_lowercase + '?!:;,.- \"()'+'\n'+"'"
-    alphabet = string.ascii_lowercase + ',.- \"'
-    i2c = dict(enumerate(alphabet))
+    # 'N' indicates null character and is mapped to 0 for zero padding
+    alphabet = 'N' + string.ascii_lowercase + ',.- \"'
+    i2c = dict((i,c) for i,c in enumerate(alphabet))
     c2i = dict((c,i) for i,c in enumerate(alphabet))
     
     alpha = 1 # clugey
