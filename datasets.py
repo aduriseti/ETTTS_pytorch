@@ -41,13 +41,17 @@ class LJSpeechDataset(Data.Dataset):
         # Sshape = (80,217)
         # Yshape = (513,868)
         
-        def padZero(tensor,targetLen):
+        def padZero(tensor,targetLen,i=0):
             if tensor.shape[-1] >= targetLen: return tensor[...,:targetLen]
             padDim = list(tensor.shape)
             padDim[-1] = max(0,targetLen-padDim[-1])
-            return ch.cat((tensor.type(ch.float),
-                           ch.zeros(*padDim).type(ch.float)),
-                          dim=-1)
+            i = np.random.randint(0,padDim[-1]) if i == None else i
+            pad = ch.zeros(*padDim).type(ch.float)
+            return ch.cat([t for t in (pad[...,:i],
+                                       tensor.type(ch.float),
+                                       pad[...,i:])
+                           if t],
+                          dim=-1),i
         
         audio,rate = librosa.load(wavpath)
         
@@ -67,21 +71,23 @@ class LJSpeechDataset(Data.Dataset):
         S = (S/np.max(S))**params.gamma
         
         if self.ttmel: #txt2mel
-            S = padZero(ch.from_numpy(S),217)
-            Y = padZero(ch.from_numpy(Y),868)
+            # shift signal to random i if pad == 2 else specify i to be 0 (no shift)
+            i = None if params.pad == 2 else 0
+            S,i = padZero(ch.from_numpy(S),217,mode=2,i=i)
+            Y,_ = padZero(ch.from_numpy(Y),4*217,mode=2,i=4*i)
         else: #ssrn trains in batches of 64 to save mem
             if S.shape[1] > 64:
                 i = np.random.randint(0,S.shape[1]-64+1)
                 S = ch.from_numpy(S[:,i:i+64])
                 Y = ch.from_numpy(Y[:,4*i:4*i+256])
             else:
-                S = padZero(ch.from_numpy(S),64)
-                Y = padZero(ch.from_numpy(Y),256)
+                S,i = padZero(ch.from_numpy(S),64)
+                Y,_ = padZero(ch.from_numpy(Y),256)
         S = S.type(ch.float)
         Y = Y.type(ch.float)
 
         L = np.array([params.c2i[c] for c in dtxt])
-        L = padZero(ch.from_numpy(L),180)
+        L,_ = padZero(ch.from_numpy(L),180)
         L = L.type(ch.long)
 
-        return L,S,Y
+        return L,S,Y,i

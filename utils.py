@@ -1,6 +1,6 @@
 import torch as ch
 import os
-from hyperparams import Hyperparams as params
+import hyperparams
 import matplotlib.pyplot as plt
 
 # # 0: no sep, 1: depthwise sep, 2: super sep
@@ -14,11 +14,12 @@ import matplotlib.pyplot as plt
 # norm = 1
 # # learning rate
 # lr = 2e-4 # from that korean guys hyperparameters
-paramDict = {'sep':params.sep,'alpha':params.alpha,
-             'dropout':params.dropout,'norm':params.norm,
-             'lr':params.lr,'chunk':params.chunk}
+# paramDict = {'sep':params.sep,'alpha':params.alpha,
+#              'dropout':params.dropout,'norm':params.norm,
+#              'lr':params.lr,'chunk':params.chunk}
 
-def saveChkpt(state,model,root='.'):
+def saveChkpt(state,model,root='.',params=hyperparams.Hyperparams()):
+    paramDict = dict((p,params.__dict__[p]) for p in params.tuneable if params.__dict__[p] != None)
     chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
     chkptNm = model+'Chkpt.pth.tar'
@@ -33,8 +34,9 @@ def saveChkpt(state,model,root='.'):
     print("SAVED EPOCH {}, LOSS {}, BEST LOSS {} TO {}".format(state['epoch'],state['lossHist'][-1],state['bestLoss'],savePaths))
 
 
-def loadChkpt(network,optimizer,model,dev='cpu',root='.'):
-    chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in paramDict.items())
+def loadChkpt(network,optimizer,model,dev='cpu',root='.', 
+              params=hyperparams.Hyperparams()):
+    chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in params.paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
     chkptNm = model+'Chkpt.pth.tar'
     bestNm = model+'Best.pth.tar'
@@ -54,3 +56,8 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.'):
         print("LOADED EPOCH {}, LOSS {}, BEST LOSS {} FROM".format(state['epoch'],state['lossHist'][-1],state['bestLoss'],path))
         return state['epoch'],state['lossHist'],state['bestLoss']
     return 0,[],float('inf')
+
+
+class ChkptModule(ch.nn.Module):
+    def __init__(self,params=hyperparams.Hyperparams()):
+        super(ChkptModule,self).__init__()

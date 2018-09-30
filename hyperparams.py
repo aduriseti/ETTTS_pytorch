@@ -1,29 +1,7 @@
 import string
 
 class Hyperparams:
-    
-    # alphabet = string.ascii_lowercase + '?!:;,.- \"()'+'\n'+"'"
-    alphabet = string.ascii_lowercase + ',.- \"'
-    i2c = dict(enumerate(alphabet))
-    c2i = dict((c,i) for i,c in enumerate(alphabet))
-
-    
-    # 0: no sep, 1: depthwise sep, 2: super sep, 3: bottleneck
-    sep = 3
-    # model width multiple - determines # of channels at each layer
-    alpha = 1
-    # controls dropout after conv layers
-    dropout = 0.05 # https://github.com/Kyubyong/dc_tts
-#     dropout = 0
-    # controls normalization
-    # 0: no norm, 1: batch norm, 2: channel norm, 3: weight norm, 4: instance norm, 5: group norm
-    norm = 2
-    # learning rate
-    lr = 1e-3 # from that korean guys hyperparameters: https://github.com/Kyubyong/dc_tts
-#     lr = 2e-4 # from the original paper: https://arxiv.org/abs/1710.08969
-    chunk = 1 # generate 1 timestep per autoregression
-    
-    # LR TOO HIGH
+        # LR TOO HIGH
     # HYPERPARAMS {'sep': 0, 'alpha': 1, 'dropout': 0, 'norm': 0, 'lr': 0.001, 'chunk': 1}
     # HYPERPARAMS {'sep': 0, 'alpha': 1, 'dropout': 1, 'norm': 0, 'lr': 0.001, 'chunk': 1}
     
@@ -55,7 +33,39 @@ class Hyperparams:
 # LOADED EPOCH 99, LOSS 0.025080004773700416, BEST LOSS 0.025080004773700416 FROM
 # 25/25 [00:02<00:00, 8.87it/s] CPU
 # 25/25 [00:00<00:00, 50.81it/s] GPU
+    tuneable = ['sep','alpha','dropout','norm','lr','chunk','sqz','pad']
+    def __init__(self,sep=0,alpha=1,dropout=0.05,
+                 norm=2,lr=1e-3,chunk=1,sqz=4,pad=0):
+        # 0: no sep, 1: depthwise sep, 2: super sep, 3: bottleneck
+        self.sep = sep
+        # model width multiple - determines # of channels at each layer
+        self.alpha = alpha
+        # controls dropout before conv layers
+        # # https://github.com/Kyubyong/dc_tts: 0.05
+        self.dropout = dropout
+        # controls normalization
+        # 0: no norm, 1: batch norm, 2: channel norm, 3: weight norm, 4: instance norm, 5: group norm
+        self.norm = norm
+        # learning rate
+#         lr = 1e-3 # from that korean guys hyperparameters: https://github.com/Kyubyong/dc_tts
+#         lr = 2e-4 # from the original paper: https://arxiv.org/abs/1710.08969
+        self.lr = lr
+#         number of spectrogram banks to generate per iteration - 1 in original paper
+        self.chunk = chunk
+        # channel divider for bottleneck convolution layer - only used if bottleneck conv used
+        self.sqz = 4 if sep == 3 else None
+        # determines how spectrogram data is zero-padded
+        # 0: pad from right, 1: pad from left, 2: pad a random amount from both directions
+        self.pad = pad
+        
+        self.paramDict = dict((p,self.__dict__[p]) for p in self.tuneable if self.__dict__[p] != None)
     
+    # alphabet = string.ascii_lowercase + '?!:;,.- \"()'+'\n'+"'"
+    alphabet = string.ascii_lowercase + ',.- \"'
+    i2c = dict(enumerate(alphabet))
+    c2i = dict((c,i) for i,c in enumerate(alphabet))
+    
+    alpha = 1 # clugey
     d = int(256*alpha)
     e = int(128*alpha)
     c = int(512*alpha)

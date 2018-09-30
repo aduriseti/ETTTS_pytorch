@@ -78,6 +78,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [ ] hyperparams
             - [x] hyperparams class
                 - [ ] add initialization?
+            - [ ] have models take hyperparams class as arguments
             - [ ] hyperparameter optimization package
                 - [ ] http://hyperopt.github.io/hyperopt/
             - [ ] create train dispatcher to train different hyperparameter combinations on different gpus
@@ -106,7 +107,6 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
                 - [x] try not bottlenecking when channel depth changes
                     - doesnt work bc of highwat conv def
             - [ ] see if there's a way to decompose non separated weights into separated convolutions then finetune w/ separated architecture
-            
         - [ ] normalization
             - [x] batch norm
             - [x] layer norm 
@@ -118,8 +118,10 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [ ] decay
         - [ ] gradient clipping
         - [ ] residual connections vs highway connections
-        - [ ] pad from other direction? - seemed like attention model trained from end of input to beginning
-            - [ ] found long sentences not spoken well at end
+        - try different padding - found long sentences not spoken well at end
+            - [ ] pad from other direction?
+            - [x] pad both ends of spectrogram randomly
+            - [x] modify guided attention loss function
         - [x] get some NULL character going for padding - alternatively modify c2i to not map any character to 0
 - [x] use as reference
     - [x] https://github.com/Kyubyong/dc_tts
