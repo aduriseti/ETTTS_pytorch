@@ -36,15 +36,15 @@ def saveChkpt(state,model,root='.',params=hyperparams.Hyperparams()):
 
 
 def loadChkpt(network,optimizer,model,dev='cpu',root='.', 
-              params=hyperparams.Hyperparams()):
+              params=hyperparams.Hyperparams(),best=0):
     chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in params.paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
     chkptNm = model+'Chkpt.pth.tar'
     bestNm = model+'Best.pth.tar'
-    loadPaths = [os.path.join(chkptDir,bestNm),
-                 os.path.join(chkptDir,chkptNm),
-                 os.path.join(root,bestNm),
+    loadPaths = [os.path.join(chkptDir,chkptNm),
                  os.path.join(root,chkptNm)]
+    if best: loadPaths += [os.path.join(chkptDir,bestNm),
+                           os.path.join(root,bestNm)]
     print('HYPERPARAMS',chkptDirNm)
     for path in loadPaths: 
         if not os.path.exists(path): 
@@ -114,6 +114,7 @@ class ModelWrapper:
                 loss.backward()
                 self.optimizer.step()
             self.lossHist.append(np.mean(epochLoss))
+            self.startEpoch = len(self.lossHist)
             print('epoch',epoch,'total',self.lossHist[-1])
             self.bestLoss = min(self.lossHist[-1],self.bestLoss)
             self.dispFun(self.network,batchV)
@@ -130,8 +131,9 @@ class ModelWrapper:
         }
         saveChkpt(state,model=self.modelName,params=self.params)
     
-    def load(self):
-        self.epoch,self.lossHist,self.bestLoss = loadChkpt(self.network,self.optimizer,self.modelName,self.dev,self.root,self.params)
+    def load(self,best=0):
+        self.startEpoch,self.lossHist,self.bestLoss = loadChkpt(self.network,self.optimizer,self.modelName,self.dev,self.root,self.params,best)
+        self.startEpoch = len(self.lossHist)
         
     def to(self,dev):
         self.dev = dev

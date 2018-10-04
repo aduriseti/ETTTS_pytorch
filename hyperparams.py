@@ -59,19 +59,18 @@ class Hyperparams:
         self.pad = pad
         
         self.paramDict = dict((p,self.__dict__[p]) for p in self.tuneable if self.__dict__[p] != None)
+        
+        self.d = int(256*alpha)
+        self.e = int(128*alpha)
+        self.c = int(512*alpha)
+        self.F = 80
+        self.Fp = 513
     
     # alphabet = string.ascii_lowercase + '?!:;,.- \"()'+'\n'+"'"
     # 'N' indicates null character and is mapped to 0 for zero padding
     alphabet = 'N' + string.ascii_lowercase + ',.- \"'
     i2c = dict((i,c) for i,c in enumerate(alphabet))
     c2i = dict((c,i) for i,c in enumerate(alphabet))
-    
-    alpha = 1 # clugey
-    d = int(256*alpha)
-    e = int(128*alpha)
-    c = int(512*alpha)
-    F = 80
-    Fp = 513
     
     g=0.2
     

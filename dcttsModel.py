@@ -16,35 +16,9 @@ class C(ch.nn.Module):
             self.pad = (k-1)*d // 2 
         self.dilation = d
         self.k = k
-        self.o = o
-        self.i = i
-        if params.sep == 3:# and o == i:
-            sqz = 4
-            self.reduce = ch.nn.Conv1d(out_channels=i//sqz,in_channels=i,
-                                  kernel_size=1)
-            self.conv = ch.nn.Conv1d(out_channels=o//sqz, in_channels=i//sqz,
+        self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
-            self.expand = ch.nn.Conv1d(out_channels=o,in_channels=o//sqz,
-                                  kernel_size=1)
-            ch.nn.init.kaiming_normal_(self.reduce.weight.data)
-            ch.nn.init.kaiming_normal_(self.conv.weight.data)
-            ch.nn.init.kaiming_normal_(self.expand.weight.data)
-        elif params.sep in (1,2) and k > 1:
-            g = 4
-            if params.sep == 2 and o%g == 0 and i%g == 0: chanGroups = g
-            else: chanGroups = 1
-            self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
-                        kernel_size=k, dilation=d, stride=stride,
-                        padding=self.pad, groups=i)
-            self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,
-                                          kernel_size=1, groups=chanGroups)
-            ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
-            ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
-#             self.conv = lambda X: self.pointwise(self.depthwise(X))
-        else:
-            self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
-                    kernel_size=k, dilation=d, stride=stride, padding=self.pad)
-            ch.nn.init.kaiming_normal_(self.conv.weight.data)
+        ch.nn.init.kaiming_normal_(self.conv.weight.data)
         # layer norm over channel
         if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
         # batch norm over channel
@@ -53,19 +27,78 @@ class C(ch.nn.Module):
     
     def forward(self,X):
         if self.params.dropout: X = self.dropout(X)
-        if self.params.sep == 3:
-            O = self.expand(self.conv(self.reduce(X)))
-        elif self.params.sep in (1,2) and k > 1:
-            O = self.pointwise(self.depthwise(X))
-        else:
-            O = self.conv(X)
-#         O = self.conv(X)
+        O = self.conv(X)
         O = O[:,:,:-self.pad] if self.causal and self.pad else O
         if self.params.norm == 2: # layer norm over channel
             O = self.norm(O.permute((0,2,1))).permute((0,2,1))
         elif self.params.norm == 1: # batch norm over channel
             O = self.norm(O)
         return O
+
+# class C(ch.nn.Module):
+#     def __init__(self,o,i,k,d,causal,params=hyperparams.Hyperparams(),stride=1):
+#         super(C,self).__init__()
+#         self.causal = causal
+#         self.params = params
+#         assert (k-1)%2 == 0 
+#         assert k > 0
+#         if causal:
+#             self.pad = (k-1)*d
+#         else:
+# #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
+#             self.pad = (k-1)*d // 2 
+#         self.dilation = d
+#         self.k = k
+#         self.o = o
+#         self.i = i
+#         if params.sep == 3:# and o == i:
+#             sqz = 4
+#             self.reduce = ch.nn.Conv1d(out_channels=i//sqz,in_channels=i,
+#                                   kernel_size=1)
+#             self.conv = ch.nn.Conv1d(out_channels=o//sqz, in_channels=i//sqz,
+#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
+#             self.expand = ch.nn.Conv1d(out_channels=o,in_channels=o//sqz,
+#                                   kernel_size=1)
+#             ch.nn.init.kaiming_normal_(self.reduce.weight.data)
+#             ch.nn.init.kaiming_normal_(self.conv.weight.data)
+#             ch.nn.init.kaiming_normal_(self.expand.weight.data)
+#         elif params.sep in (1,2) and k > 1:
+#             g = 4
+#             if params.sep == 2 and o%g == 0 and i%g == 0: chanGroups = g
+#             else: chanGroups = 1
+#             self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
+#                         kernel_size=k, dilation=d, stride=stride,
+#                         padding=self.pad, groups=i)
+#             self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,
+#                                           kernel_size=1, groups=chanGroups)
+#             ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
+#             ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
+# #             self.conv = lambda X: self.pointwise(self.depthwise(X))
+#         else:
+#             self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
+#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
+#             ch.nn.init.kaiming_normal_(self.conv.weight.data)
+#         # layer norm over channel
+#         if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
+#         # batch norm over channel
+#         elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
+#         if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
+    
+#     def forward(self,X):
+#         if self.params.dropout: X = self.dropout(X)
+#         if self.params.sep == 3:
+#             O = self.expand(self.conv(self.reduce(X)))
+#         elif self.params.sep in (1,2) and k > 1:
+#             O = self.pointwise(self.depthwise(X))
+#         else:
+#             O = self.conv(X)
+# #         O = self.conv(X)
+#         O = O[:,:,:-self.pad] if self.causal and self.pad else O
+#         if self.params.norm == 2: # layer norm over channel
+#             O = self.norm(O.permute((0,2,1))).permute((0,2,1))
+#         elif self.params.norm == 1: # batch norm over channel
+#             O = self.norm(O)
+#         return O
 
 class D(ch.nn.Module):
     def __init__(self,o,i,k,d,params=hyperparams.Hyperparams(),causal=0,s=2):

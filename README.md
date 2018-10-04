@@ -54,7 +54,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [ ] work smthg out that prevents loading models w/ conflicting hyperparams
             - [ ] automatic cold start i.e. don't have to specify load = 1|0
         - [x] implement model params
-            - [ ] nonsep vs sep vs super sep
+            - [x] nonsep vs sep vs super sep
             - [x] batch vs layer vs weight vs instance vs group norm
             - [x] alpha
             - [x] learning rate
@@ -65,7 +65,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [ ] recalculate hop length and fft window size
             - [ ] down/up sample in data fetcher
             - [ ] add as hyperparam in tunable model params
-        - [ ] abstract class/fun for training/checkpointing/loss monitoring
+        - [x] abstract class/fun for training/checkpointing/loss monitoring
         - [ ] test out if concatenating mel and text enc makes sense
             - probably does - common in most attention mechanisms
         - [x] combine the text2Mel,audioDec,attention models into one class
@@ -74,11 +74,11 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
         - [x] fix inference memory leak
             - with ch.no_grad()
         - [ ] train text2Mel and SSRN together
-        - [ ] chunked generation - train network to encode multiple timesteps at a time
+        - [x] chunked generation - train network to encode multiple timesteps at a time
         - [ ] hyperparams
             - [x] hyperparams class
-                - [ ] add initialization?
-            - [ ] have models take hyperparams class as arguments
+                - [x] add initialization?
+            - [x] have models take hyperparams class as arguments
             - [ ] hyperparameter optimization package
                 - [ ] http://hyperopt.github.io/hyperopt/
             - [ ] create train dispatcher to train different hyperparameter combinations on different gpus
@@ -103,6 +103,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
                 - training really slow
                     - [ ] try layer norm between all bottleneck layers? 
                     - [ ] increase lr
+                - ssrn not training 
                     - [ ] gradient clipping
                 - [x] try not bottlenecking when channel depth changes
                     - doesnt work bc of highwat conv def
