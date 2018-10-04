@@ -9,7 +9,7 @@ class Hyperparams:
 
     
     # 0: no sep, 1: depthwise sep, 2: super sep, 3: bottleneck
-    sep = 3
+    sep = 0
     # model width multiple - determines # of channels at each layer
     alpha = 1
     # controls dropout after conv layers
