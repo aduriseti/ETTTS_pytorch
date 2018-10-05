@@ -33,9 +33,11 @@ class Hyperparams:
 # LOADED EPOCH 99, LOSS 0.025080004773700416, BEST LOSS 0.025080004773700416 FROM
 # 25/25 [00:02<00:00, 8.87it/s] CPU
 # 25/25 [00:00<00:00, 50.81it/s] GPU
-    tuneable = ['sep','alpha','dropout','norm','lr','chunk','sqz','pad']
+    tuneable = ['sep','alpha','dropout','norm','lr','chunk','sqz','pad',
+                'reversedDilation']
     def __init__(self,sep=0,alpha=1,dropout=0.05,
-                 norm=2,lr=1e-3,chunk=1,sqz=4,pad=0):
+                 norm=2,lr=1e-3,chunk=1,sqz=4,pad=0,
+                 reversedDilation=0):
         # 0: no sep, 1: depthwise sep, 2: super sep, 3: bottleneck
         self.sep = sep
         # model width multiple - determines # of channels at each layer
@@ -57,6 +59,8 @@ class Hyperparams:
         # determines how spectrogram data is zero-padded
         # 0: pad from right, 1: pad from left, 2: pad a random amount from both directions
         self.pad = pad
+        
+        self.reversedDilation = reversedDilation
         
         self.paramDict = dict((p,self.__dict__[p]) for p in self.tuneable if self.__dict__[p] != None)
         

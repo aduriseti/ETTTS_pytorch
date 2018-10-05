@@ -121,7 +121,7 @@ class ModelWrapper:
             self.startEpoch = len(self.lossHist)
             print('epoch',epoch,'total',self.lossHist[-1])
             self.bestLoss = min(self.lossHist[-1],self.bestLoss)
-            self.dispFun(self.network,batchV)
+            self.dispFun(self.network,batch)
             self.save()
             self.evaluate()
             

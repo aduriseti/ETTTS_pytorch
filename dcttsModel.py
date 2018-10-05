@@ -2,38 +2,35 @@ import torch as ch
 import hyperparams
 import utils
 
-# class C(ch.nn.Module):
-#     def __init__(self,o,i,k,d,causal,params=hyperparams.Hyperparams(),stride=1):
-#         super(C,self).__init__()
-#         self.causal = causal
-#         self.params = params
-#         assert (k-1)%2 == 0 
-#         assert k > 0
-#         if causal:
-#             self.pad = (k-1)*d
-#         else:
-# #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
-#             self.pad = (k-1)*d // 2 
-#         self.dilation = d
-#         self.k = k
-#         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
-#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
-#         ch.nn.init.kaiming_normal_(self.conv.weight.data)
-#         # layer norm over channel
-#         if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
-#         # batch norm over channel
-#         elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
-#         if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
+class Permute(ch.nn.Module):
+    def __init__(self,dims):
+        self.dims = dims
+        super(Permute,self).__init__()
+        
+    def forward(self,X):
+        return X.permute(self.dims)
     
-#     def forward(self,X):
-#         if self.params.dropout: X = self.dropout(X)
-#         O = self.conv(X)
-#         O = O[:,:,:-self.pad] if self.causal and self.pad else O
-#         if self.params.norm == 2: # layer norm over channel
-#             O = self.norm(O.permute((0,2,1))).permute((0,2,1))
-#         elif self.params.norm == 1: # batch norm over channel
-#             O = self.norm(O)
-#         return O
+class Transpose(ch.nn.Module):
+    def __init__(self,dim1,dim2):
+        self.dim1 = dim1
+        self.dim2 = dim2
+        super(Transpose,self).__init__()
+        
+    def forward(self,X):
+        return X.transpose(self.dim1,self.dim2)
+
+class Slice(ch.nn.Module):
+    def __init__(self,dim=-1,start=None,end=None,inc=None):
+        assert dim == -1
+        self.dim = dim
+        self.start = start
+        self.end = end
+        self.inc = None
+        super(Slice,self).__init__()
+        
+    def forward(self,X):
+#         return X.index_select(dim,ch.LongTensor(range(start,end,inc))
+        return X[...,self.start:self.end:self.inc]
 
 class C(ch.nn.Module):
     def __init__(self,o,i,k,d,causal,params=hyperparams.Hyperparams(),stride=1):
@@ -51,6 +48,8 @@ class C(ch.nn.Module):
         self.k = k
         self.o = o
         self.i = i
+        layers = []
+        if params.dropout: layers += [ch.nn.Dropout(p=params.dropout)]
         if params.sep == 3:# and o == i:
             sqz = 4
             self.reduce = ch.nn.Conv1d(out_channels=i//sqz,in_channels=i,
@@ -62,6 +61,7 @@ class C(ch.nn.Module):
             ch.nn.init.kaiming_normal_(self.reduce.weight.data)
             ch.nn.init.kaiming_normal_(self.conv.weight.data)
             ch.nn.init.kaiming_normal_(self.expand.weight.data)
+            layers += [self.reduce,self.conv,self.expand]
         elif params.sep in (1,2) and k > 1:
             g = 4
             if params.sep == 2 and o%g == 0 and i%g == 0: chanGroups = g
@@ -73,32 +73,93 @@ class C(ch.nn.Module):
                                           kernel_size=1, groups=chanGroups)
             ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
             ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
-#             self.conv = lambda X: self.pointwise(self.depthwise(X))
+            layers += [self.depthwise,self.pointwise]
         else:
             self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
             ch.nn.init.kaiming_normal_(self.conv.weight.data)
+            layers += [self.conv]
+        if self.causal and self.pad: layers += [Slice(dim=-1,end=-self.pad)]
         # layer norm over channel
-        if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
+        if params.norm == 2: 
+            self.norm = ch.nn.LayerNorm((o,))
+            layers += [Transpose(2,1),self.norm,Transpose(2,1)]
         # batch norm over channel
-        elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
-        if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
+        elif params.norm == 1: 
+            self.norm = ch.nn.BatchNorm1d(num_features=o)
+            layers += [self.norm]
+        self.block = ch.nn.Sequential(*layers)
     
     def forward(self,X):
-        if self.params.dropout: X = self.dropout(X)
-        if self.params.sep == 3:
-            O = self.expand(self.conv(self.reduce(X)))
-        elif self.params.sep in (1,2) and k > 1:
-            O = self.pointwise(self.depthwise(X))
-        else:
-            O = self.conv(X)
-#         O = self.conv(X)
-        O = O[:,:,:-self.pad] if self.causal and self.pad else O
-        if self.params.norm == 2: # layer norm over channel
-            O = self.norm(O.permute((0,2,1))).permute((0,2,1))
-        elif self.params.norm == 1: # batch norm over channel
-            O = self.norm(O)
+        O = self.block(X)
+#         O = O[:,:,:-self.pad] if self.causal and self.pad else O
         return O
+
+
+# class C(ch.nn.Module):
+#     def __init__(self,o,i,k,d,causal,params=hyperparams.Hyperparams(),stride=1):
+#         super(C,self).__init__()
+#         self.causal = causal
+#         self.params = params
+#         assert (k-1)%2 == 0 
+#         assert k > 0
+#         if causal:
+#             self.pad = (k-1)*d
+#         else:
+# #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
+#             self.pad = (k-1)*d // 2 
+#         self.dilation = d
+#         self.k = k
+#         self.o = o
+#         self.i = i
+#         if params.sep == 3:# and o == i:
+#             sqz = 4
+#             self.reduce = ch.nn.Conv1d(out_channels=i//sqz,in_channels=i,
+#                                   kernel_size=1)
+#             self.conv = ch.nn.Conv1d(out_channels=o//sqz, in_channels=i//sqz,
+#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
+#             self.expand = ch.nn.Conv1d(out_channels=o,in_channels=o//sqz,
+#                                   kernel_size=1)
+#             ch.nn.init.kaiming_normal_(self.reduce.weight.data)
+#             ch.nn.init.kaiming_normal_(self.conv.weight.data)
+#             ch.nn.init.kaiming_normal_(self.expand.weight.data)
+#         elif params.sep in (1,2) and k > 1:
+#             g = 4
+#             if params.sep == 2 and o%g == 0 and i%g == 0: chanGroups = g
+#             else: chanGroups = 1
+#             self.depthwise = ch.nn.Conv1d(out_channels=i, in_channels=i,
+#                         kernel_size=k, dilation=d, stride=stride,
+#                         padding=self.pad, groups=i)
+#             self.pointwise = ch.nn.Conv1d(out_channels=o, in_channels=i,
+#                                           kernel_size=1, groups=chanGroups)
+#             ch.nn.init.kaiming_normal_(self.depthwise.weight.data)
+#             ch.nn.init.kaiming_normal_(self.pointwise.weight.data)
+# #             self.conv = lambda X: self.pointwise(self.depthwise(X))
+#         else:
+#             self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
+#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
+#             ch.nn.init.kaiming_normal_(self.conv.weight.data)
+#         # layer norm over channel
+#         if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
+#         # batch norm over channel
+#         elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
+#         if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
+    
+#     def forward(self,X):
+#         if self.params.dropout: X = self.dropout(X)
+#         if self.params.sep == 3:
+#             O = self.expand(self.conv(self.reduce(X)))
+#         elif self.params.sep in (1,2) and k > 1:
+#             O = self.pointwise(self.depthwise(X))
+#         else:
+#             O = self.conv(X)
+# #         O = self.conv(X)
+#         O = O[:,:,:-self.pad] if self.causal and self.pad else O
+#         if self.params.norm == 2: # layer norm over channel
+#             O = self.norm(O.permute((0,2,1))).permute((0,2,1))
+#         elif self.params.norm == 1: # batch norm over channel
+#             O = self.norm(O)
+#         return O
 
 class D(ch.nn.Module):
     def __init__(self,o,i,k,d,params=hyperparams.Hyperparams(),causal=0,s=2):
@@ -131,8 +192,9 @@ class TextEnc(ch.nn.Module):
         self.embed = ch.nn.Embedding(len(alphabet),e)
         ch.nn.init.kaiming_normal_(self.embed.weight.data)
         layers = [C(2*d,e,1,1,c,params),ch.nn.ReLU(),C(2*d,2*d,1,1,c,params)]
+        ldfs = reversed(range(4)) if params.reversedDilation else range(4)
         for _ in range(2):
-            layers += [HC(2*d,2*d,3,3**ldf,c,params) for ldf in range(4)]
+            layers += [HC(2*d,2*d,3,3**ldf,c,params) for ldf in ldfs]
         layers += [HC(2*d,2*d,3,1,c,params) for _ in range(2)]
         layers += [HC(2*d,2*d,1,1,c,params) for _ in range(2)]
         self.seq = ch.nn.Sequential(*layers)
@@ -150,8 +212,9 @@ class AudioEnc(ch.nn.Module):
         layers = [C(d,F,1,1,c,params),ch.nn.ReLU(),
                   C(d,d,1,1,c,params),ch.nn.ReLU(),
                   C(d,d,1,1,c,params)]
+        ldfs = reversed(range(4)) if params.reversedDilation else range(4)
         for _ in range(2):
-            layers += [HC(d,d,3,3**ldf,c,params) for ldf in range(4)]
+            layers += [HC(d,d,3,3**ldf,c,params) for ldf in ldfs]
         layers += [HC(d,d,3,3,c,params) for _ in range(2)]
         self.seq = ch.nn.Sequential(*layers)
         
@@ -164,8 +227,9 @@ class AudioDec(ch.nn.Module):
         s = 1 # causal
         d,F = params.d,params.F
         layers = [C(d,2*d,1,1,s,params)]
+        ldfs = reversed(range(4)) if params.reversedDilation else range(4)
         for _ in range(1): #?
-            layers += [HC(d,d,3,3**ldf,s,params) for ldf in range(4)]
+            layers += [HC(d,d,3,3**ldf,s,params) for ldf in ldfs]
         layers += [HC(d,d,3,1,s,params) for _ in range(2)]
         for _ in range(3): 
             layers += [C(d,d,1,1,s,params),ch.nn.ReLU()]
