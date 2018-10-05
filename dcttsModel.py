@@ -1,5 +1,39 @@
 import torch as ch
-from hyperparams import Hyperparams as params
+import hyperparams
+params = hyperparams.Hyperparams
+
+# class C(ch.nn.Module):
+#     def __init__(self,o,i,k,d,causal,stride=1):
+#         super(C,self).__init__()
+#         self.causal = causal
+#         self.params = params
+#         assert (k-1)%2 == 0 
+#         assert k > 0
+#         if causal:
+#             self.pad = (k-1)*d
+#         else:
+# #             print('filter',k,'dilation',d,'total pad',(k-1)*d,'half pad',(k-1)*d//2)
+#             self.pad = (k-1)*d // 2 
+#         self.dilation = d
+#         self.k = k
+#         self.conv = ch.nn.Conv1d(out_channels=o, in_channels=i,
+#                     kernel_size=k, dilation=d, stride=stride, padding=self.pad)
+#         ch.nn.init.kaiming_normal_(self.conv.weight.data)
+#         # layer norm over channel
+#         if params.norm == 2: self.norm = ch.nn.LayerNorm((o,))
+#         # batch norm over channel
+#         elif params.norm == 1: self.norm = ch.nn.BatchNorm1d(num_features=o)
+#         if params.dropout: self.dropout = ch.nn.Dropout(p=params.dropout)
+    
+#     def forward(self,X):
+#         if self.params.dropout: X = self.dropout(X)
+#         O = self.conv(X)
+#         O = O[:,:,:-self.pad] if self.causal and self.pad else O
+#         if self.params.norm == 2: # layer norm over channel
+#             O = self.norm(O.permute((0,2,1))).permute((0,2,1))
+#         elif self.params.norm == 1: # batch norm over channel
+#             O = self.norm(O)
+#         return O
 
 class C(ch.nn.Module):
     def __init__(self,o,i,k,d,causal,s=1):
