@@ -104,11 +104,15 @@ class ModelWrapper:
         for epoch in range(self.startEpoch,self.startEpoch+numEpochs):
             print("EPOCH",epoch)
             epochLoss = []
-            for step,batch in progressBar(enumerate(self.loader)):
+            step = 0
+            for batch in progressBar(self.loader):
                 if step >= numSteps: break
+                step += 1
 #                 bL,bS,BY,bI = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
-                batchV = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
-                loss = self.lossFun(self.network,batchV)
+                batch = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
+#                 for i in (0,1):
+#                     batch[i] = ch.autograd.Variable(batch[i].to(self.dev))
+                loss = self.lossFun(self.network,batch)
                 epochLoss.append(loss.data.item())
                 self.optimizer.zero_grad()
                 loss.backward()
