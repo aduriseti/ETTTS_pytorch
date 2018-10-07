@@ -52,7 +52,7 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.',
             continue
         state = ch.load(path,map_location=dev)
         network.load_state_dict(state['modelState'])
-        optimizer.load_state_dict(state['optimizerState'])
+        if optimizer: optimizer.load_state_dict(state['optimizerState'])
 #         if len(state['lossHist']) > 10: plt.plot(state['lossHist'])
         print("LOADED EPOCH {}, LOSS {}, BEST LOSS {} FROM {}".format(state['epoch'],state['lossHist'][-1] if state['lossHist'] else float('inf'),state['bestLoss'],path))
         return state['epoch'],state['lossHist'],state['bestLoss']
@@ -66,8 +66,9 @@ class ChkptModule(ch.nn.Module):
 def evalFunTemplate(network,batch): pass
 def dispFunTemplate(network,batch): pass
 class ModelWrapper:
-    def __init__(self,network,optimizer,lossFun,loader,modelName,
-                 dev='cpu',root='.',evalFun=evalFunTemplate,dispFun=dispFunTemplate):
+    def __init__(self,network,optimizer=None,lossFun=None,
+                 loader=None,modelName="",dev='cpu',root='.',
+                 evalFun=evalFunTemplate,dispFun=dispFunTemplate):
         self.network = network
         self.optimizer = optimizer
         self.lossFun = lossFun
@@ -106,12 +107,10 @@ class ModelWrapper:
             epochLoss = []
             step = 0
             for batch in progressBar(self.loader):
-                if step >= numSteps: break
                 step += 1
-#                 bL,bS,BY,bI = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
                 batch = [ch.autograd.Variable(t.to(self.dev)) for t in batch]
-#                 for i in (0,1):
-#                     batch[i] = ch.autograd.Variable(batch[i].to(self.dev))
+                if step >= numSteps: break
+#                 print([t.device for t in batch])
                 loss = self.lossFun(self.network,batch)
                 epochLoss.append(loss.data.item())
                 self.optimizer.zero_grad()
@@ -121,6 +120,7 @@ class ModelWrapper:
             self.startEpoch = len(self.lossHist)
             print('epoch',epoch,'total',self.lossHist[-1])
             self.bestLoss = min(self.lossHist[-1],self.bestLoss)
+#             print([t.device for t in batch])
             self.dispFun(self.network,batch)
             self.save()
             self.evaluate()
@@ -141,5 +141,6 @@ class ModelWrapper:
         
     def to(self,dev):
         self.dev = dev
+        self.network = self.network.to(dev)
         return self
     

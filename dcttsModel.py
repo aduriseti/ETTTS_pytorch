@@ -262,6 +262,7 @@ class Text2Mel(ch.nn.Module):
 class SSRN(ch.nn.Module):
     def __init__(self,params=hyperparams.Hyperparams(),*args,**kwargs):
         super(SSRN,self).__init__(*args,**kwargs)
+        self.params = params
         s = 0 # non causal
         c,F,Fp = params.c,params.F,params.Fp
         layers = [C(c,F,1,1,s)]

@@ -61,6 +61,7 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [x] chunk size (1 default for paper)
             - [ ] sample rate
             - [ ] method to migrate checkpoints w/ different model param sets
+        - [ ] check if calling contiguous after transpose/permute speeds up model
         - [ ] support different sample rates
             - [ ] recalculate hop length and fft window size
             - [ ] down/up sample in data fetcher
