@@ -50,6 +50,22 @@ class C(ch.nn.Module):
         self.i = i
         layers = []
         if params.dropout: layers += [ch.nn.Dropout(p=params.dropout)]
+        # have norm before convolution b/c many convolutions double # of channels
+        # layer norm over sequence - pretty questionable b/c of padding 
+        # and different data distribution (also length) when generating
+        # also I think layer norm requires size of layer?? to be known in advance
+        # does it make sense to normalize over a small spatial window?
+        # probably have speedup by doing layer norm first
+#         if params.norm == 3:
+#             layers += [ch.nn.LayerNorm((
+        # layer norm over channel
+        if params.norm == 2: 
+            self.norm = ch.nn.LayerNorm((i,))
+            layers += [Transpose(2,1),self.norm,Transpose(2,1)]
+        # batch norm over channel
+        elif params.norm == 1: 
+            self.norm = ch.nn.BatchNorm1d(num_features=i)
+            layers += [self.norm]
         if params.sep == 3:# and o == i:
             sqz = 4
             self.reduce = ch.nn.Conv1d(out_channels=i//sqz,in_channels=i,
@@ -80,14 +96,6 @@ class C(ch.nn.Module):
             ch.nn.init.kaiming_normal_(self.conv.weight.data)
             layers += [self.conv]
         if self.causal and self.pad: layers += [Slice(dim=-1,end=-self.pad)]
-        # layer norm over channel
-        if params.norm == 2: 
-            self.norm = ch.nn.LayerNorm((o,))
-            layers += [Transpose(2,1),self.norm,Transpose(2,1)]
-        # batch norm over channel
-        elif params.norm == 1: 
-            self.norm = ch.nn.BatchNorm1d(num_features=o)
-            layers += [self.norm]
         self.block = ch.nn.Sequential(*layers)
     
     def forward(self,X):

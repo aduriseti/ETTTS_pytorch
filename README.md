@@ -52,7 +52,9 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
                 - [ ] model speed it/sec on cpu and gpu
         - [x] different checkpoint paths for different model params
             - [ ] work smthg out that prevents loading models w/ conflicting hyperparams
-            - [ ] automatic cold start i.e. don't have to specify load = 1|0
+                - doesn't this already happen?
+            - [ ] incorporate hash of model structure into model name 
+            - [x] automatic cold start i.e. don't have to specify load = 1|0
         - [x] implement model params
             - [x] nonsep vs sep vs super sep
             - [x] batch vs layer vs weight vs instance vs group norm

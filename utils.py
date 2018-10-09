@@ -5,6 +5,13 @@ import os
 import hyperparams
 import matplotlib.pyplot as plt
 
+
+def modelHash(network):
+    import hashlib
+    hashFun = hashlib.sha256()
+    hashFun.update(bytes(str(network),'utf-8'))
+    return hashFun.hexdigest()
+
 # # 0: no sep, 1: depthwise sep, 2: super sep
 # sep = 0
 # # model width multiple - determines # of channels at each layer
@@ -20,13 +27,13 @@ import matplotlib.pyplot as plt
 #              'dropout':params.dropout,'norm':params.norm,
 #              'lr':params.lr,'chunk':params.chunk}
 
-def saveChkpt(state,model,root='.',params=hyperparams.Hyperparams()):
+def saveChkpt(network,state,model,root='.',params=hyperparams.Hyperparams()):
     chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in params.paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
-    chkptNm = model+'Chkpt.pth.tar'
-    bestNm = model+'Best.pth.tar'
+    lastNm = '{}Last.{}.chkpt.tar'.format(model,modelHash(network))
+    bestNm = '{}Best.{}.chkpt.tar'.format(model,modelHash(network))
     if not os.path.exists(chkptDir): os.makedirs(chkptDir)
-    savePaths = [os.path.join(chkptDir,chkptNm),os.path.join(root,chkptNm)]
+    savePaths = [os.path.join(chkptDir,lastNm),os.path.join(root,lastNm)]
     # found copying files using shutil unreliable
     if state['lossHist'] and state['lossHist'][-1] <= state['bestLoss']: 
         savePaths += [os.path.join(chkptDir,bestNm),os.path.join(root,bestNm)]
@@ -39,12 +46,10 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.',
               params=hyperparams.Hyperparams(),best=0):
     chkptDirNm = "|".join("{}:{}".format(k,v) for k,v in params.paramDict.items())
     chkptDir = os.path.join(root,chkptDirNm)
-    chkptNm = model+'Chkpt.pth.tar'
-    bestNm = model+'Best.pth.tar'
-    loadPaths = [os.path.join(chkptDir,chkptNm),
-                 os.path.join(root,chkptNm)]
-    if best: loadPaths += [os.path.join(chkptDir,bestNm),
-                           os.path.join(root,bestNm)]
+    lastNm = '{}Last.{}.chkpt.tar'.format(model,modelHash(network))
+    bestNm = '{}Best.{}.chkpt.tar'.format(model,modelHash(network))
+    loadPaths = [os.path.join(chkptDir,lastNm),os.path.join(root,lastNm)]
+    if best: loadPaths += [os.path.join(chkptDir,bestNm),os.path.join(root,bestNm)]
     print('HYPERPARAMS',chkptDirNm)
     for path in loadPaths: 
         if not os.path.exists(path): 
@@ -59,9 +64,9 @@ def loadChkpt(network,optimizer,model,dev='cpu',root='.',
     return 0,[],float('inf')
 
 
-class ChkptModule(ch.nn.Module):
-    def __init__(self,params=hyperparams.Hyperparams()):
-        super(ChkptModule,self).__init__()
+# class ChkptModule(ch.nn.Module):
+#     def __init__(self,params=hyperparams.Hyperparams()):
+#         super(ChkptModule,self).__init__()
 
 def evalFunTemplate(network,batch): pass
 def dispFunTemplate(network,batch): pass
@@ -133,7 +138,7 @@ class ModelWrapper:
             'bestLoss': self.bestLoss,
             'optimizerState': self.optimizer.state_dict() 
         }
-        saveChkpt(state,model=self.modelName,params=self.params)
+        saveChkpt(self.network,state,model=self.modelName,params=self.params)
     
     def load(self,best=0):
         self.startEpoch,self.lossHist,self.bestLoss = loadChkpt(self.network,self.optimizer,self.modelName,self.dev,self.root,self.params,best)
