@@ -140,22 +140,31 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
 
 #### Further work
 - [ ] waveRNN
-    - [ ] https://arxiv.org/pdf/1802.08435.pdf
-    - [ ] /Users/aduriseti/Documents/2018spring/tesla/WaveRNN-master
-    - [ ] /Users/aduriseti/Documents/2018spring/tesla/TensorFlow-Efficient-Neural-Audio-Synthesis-master
+    - [x] https://arxiv.org/pdf/1802.08435.pdf
+    - [x] /Users/aduriseti/Documents/2018spring/tesla/WaveRNN-master
+    - [x] /Users/aduriseti/Documents/2018spring/tesla/TensorFlow-Efficient-Neural-Audio-Synthesis-master
 - [ ] waveNet
     - [ ] https://arxiv.org/abs/1609.03499
+- [ ] similar to dctts but for speech recognition
+    - [ ] https://arxiv.org/pdf/1506.07503.pdf
 - [ ] streaming spectrogram generation
     - [ ] https://pdfs.semanticscholar.org/095a/ce7fbffb4b55ba6e71f6c06566fa4de67d69.pdf
 - [ ] gan TTS/voice conversion (VC)
+    - [ ] adversatial audio sythesis: https://arxiv.org/abs/1802.04208
     - [ ] https://github.com/r9y9/gantts
+    - [ ] https://www.youtube.com/watch?v=nsrSrYtKkT8
 - [ ] styleNN - if only for the dataset
     - [ ] http://imanmalik.com/cs/2017/06/05/neural-style.html
 - [ ] deepVoice3
     - [ ] https://arxiv.org/abs/1710.07654
+- [ ] tacotron:
+    - [ ] https://github.com/Rayhane-mamah/Tacotron-2/wiki/Spectrogram-Feature-prediction-network
+    - [ ] https://github.com/Kyubyong/tacotron
+    - [ ] find on arxiv
 - [ ] general optimization
     - [ ] squeezenet
         - [ ] https://arxiv.org/abs/1602.07360
+        - [ ] https://github.com/pytorch/vision/blob/master/torchvision/models/squeezenet.py
     - [ ] mobilenet
         - [x] https://arxiv.org/abs/1704.04861
         - depthwise separable /w memory managemnt opt and op vectorizing opt
