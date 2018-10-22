@@ -201,6 +201,7 @@ class TextEnc(ch.nn.Module):
         ch.nn.init.kaiming_normal_(self.embed.weight.data)
         layers = [C(2*d,e,1,1,c,params),ch.nn.ReLU(),C(2*d,2*d,1,1,c,params)]
         ldfs = reversed(range(4)) if params.reversedDilation else range(4)
+        ldfs = list(ldfs)
         for _ in range(2):
             layers += [HC(2*d,2*d,3,3**ldf,c,params) for ldf in ldfs]
         layers += [HC(2*d,2*d,3,1,c,params) for _ in range(2)]
@@ -221,6 +222,7 @@ class AudioEnc(ch.nn.Module):
                   C(d,d,1,1,c,params),ch.nn.ReLU(),
                   C(d,d,1,1,c,params)]
         ldfs = reversed(range(4)) if params.reversedDilation else range(4)
+        ldfs = list(ldfs)
         for _ in range(2):
             layers += [HC(d,d,3,3**ldf,c,params) for ldf in ldfs]
         layers += [HC(d,d,3,3,c,params) for _ in range(2)]
@@ -236,8 +238,9 @@ class AudioDec(ch.nn.Module):
         d,F = params.d,params.F
         layers = [C(d,2*d,1,1,s,params)]
         ldfs = reversed(range(4)) if params.reversedDilation else range(4)
+        ldfs = list(ldfs)
         for _ in range(1): #?
-            layers += [HC(d,d,3,3**ldf,s,params) for ldf in ldfs]
+                layers += [HC(d,d,3,3**ldf,s,params) for ldf in ldfs]
         layers += [HC(d,d,3,1,s,params) for _ in range(2)]
         for _ in range(3): 
             layers += [C(d,d,1,1,s,params),ch.nn.ReLU()]
