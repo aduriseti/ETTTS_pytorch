@@ -98,3 +98,5 @@ class Hyperparams:
     Lshape = (180,)
     Sshape = (80,217)
     Yshape = (513,868)
+    
+    testdev = 1

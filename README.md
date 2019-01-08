@@ -111,6 +111,8 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
                 - [x] try not bottlenecking when channel depth changes
                     - doesnt work bc of highwat conv def
             - [ ] see if there's a way to decompose non separated weights into separated convolutions then finetune w/ separated architecture
+            - some stuff here: https://arxiv.org/pdf/1706.07156.pdf
+                - [ ] try 1 channel 2d conv w/ stride and perhaps dilation
         - [ ] normalization
             - [x] batch norm
             - [x] layer norm 
@@ -127,6 +129,10 @@ pytorch implementation of https://arxiv.org/abs/1710.08969
             - [x] pad both ends of spectrogram randomly
             - [x] modify guided attention loss function
         - [x] get some NULL character going for padding - alternatively modify c2i to not map any character to 0
+        - account for equal loudness perception envelope
+            - [ ] mfcc vs mel spectrogram
+            - [ ] equal loudness loss on WFT
+            - [ ] equal loudness loss on MSB
 - [x] use as reference
     - [x] https://github.com/Kyubyong/dc_tts
     - [x] https://github.com/eazhary/dctts2
